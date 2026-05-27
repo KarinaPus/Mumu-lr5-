@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Выставки{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h1>Список выставок</h1>
+    <form method="get">
+        <input type="text" name="search" value="{{ request.GET.search|default_if_none:'' }}" placeholder="Поиск по названию или описанию">
+        <button class="btn" type="submit">Поиск</button>
+    </form>
+</div>
+
+<div class="panel">
+    {% for exhibition in exhibitions %}
+        <div style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #eee;">
+            <h2><a href="{% url 'museum:exhibition-detail' exhibition.pk %}">{{ exhibition.title }}</a></h2>
+            <p>{{ exhibition.museum.name }} • {{ exhibition.start_date }} — {{ exhibition.end_date }}</p>
+            <p>{{ exhibition.description|truncatewords:30 }}</p>
+            <a class="btn" href="{% url 'museum:exhibition-detail' exhibition.pk %}">Подробнее</a>
+            {% if user.is_superuser %}
+                <a class="btn btn-secondary" href="{% url 'museum:exhibition-edit' exhibition.pk %}">Редактировать</a>
+                <a class="btn btn-danger" href="{% url 'museum:exhibition-delete' exhibition.pk %}">Удалить</a>
+            {% endif %}
+        </div>
+    {% empty %}
+        <p>Выставок пока нет.</p>
+    {% endfor %}
+
+    {% if is_paginated %}
+        <p>
+            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">Назад</a>{% endif %}
+            Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Вперёд</a>{% endif %}
+        </p>
+    {% endif %}
+</div>
+{% endblock %}

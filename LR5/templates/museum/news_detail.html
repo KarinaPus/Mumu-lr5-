@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ article.title }}{% endblock %}
+
+{% block content %}
+<div class="panel">
+    {% if article.image %}
+        <img src="{{ article.image.url }}" alt="{{ article.title }}">
+    {% endif %}
+    <h1>{{ article.title }}</h1>
+    <p class="muted">Опубликовано: {{ article.published_at|date:'d/m/Y H:i' }}</p>
+    <p>{{ article.body|linebreaksbr }}</p>
+    <a class="btn" href="{% url 'museum:news-list' %}">Назад к новостям</a>
+</div>
+{% endblock %}

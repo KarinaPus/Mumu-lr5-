@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Статистика{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h1>Статистика для администратора</h1>
+    <p class="muted">Сводные данные по музею, а также фильтры для аналитики по залам, сотрудникам и экскурсиям.</p>
+    <table>
+        <tr><th>Показатель</th><th>Значение</th></tr>
+        <tr><td>Музеи</td><td>{{ museums }}</td></tr>
+        <tr><td>Залы</td><td>{{ halls }}</td></tr>
+        <tr><td>Экспонаты</td><td>{{ exhibits }}</td></tr>
+        <tr><td>Выставки</td><td>{{ exhibitions }}</td></tr>
+        <tr><td>Экскурсии</td><td>{{ tours }}</td></tr>
+        <tr><td>Билеты</td><td>{{ tickets }}</td></tr>
+        <tr><td>Выставки с гидом</td><td>{{ guided_exhibitions }}</td></tr>
+        <tr><td>Активные выставки</td><td>{{ active_exhibitions }}</td></tr>
+        <tr><td>Новости</td><td>{{ news }}</td></tr>
+        <tr><td>Активные промокоды</td><td>{{ active_promocodes }}</td></tr>
+        <tr><td>Отзывы</td><td>{{ reviews }}</td></tr>
+        <tr><td>Средняя оценка</td><td>{{ average_rating|floatformat:2 }}</td></tr>
+    </table>
+</div>
+
+<div class="panel">
+    <h2>Фильтры отчётов</h2>
+    <form method="get">
+        <div class="form-row">
+            <label for="floor">Номер этажа</label>
+            <input id="floor" type="number" name="floor" min="1" value="{{ selected_floor|default:'' }}">
+        </div>
+        <div class="form-row">
+            <label for="season">Сезон экскурсий</label>
+            <select id="season" name="season">
+                <option value="" {% if not selected_season %}selected{% endif %}>Все сезоны</option>
+                <option value="spring" {% if selected_season == 'spring' %}selected{% endif %}>Весна</option>
+                <option value="summer" {% if selected_season == 'summer' %}selected{% endif %}>Лето</option>
+                <option value="autumn" {% if selected_season == 'autumn' %}selected{% endif %}>Осень</option>
+                <option value="winter" {% if selected_season == 'winter' %}selected{% endif %}>Зима</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <label for="date">Дата для подсчёта экспонатов по залам</label>
+            <input id="date" type="date" name="date" value="{{ selected_date|default:'' }}">
+        </div>
+        <button class="btn" type="submit">Применить фильтры</button>
+    </form>
+</div>
+
+<div class="panel">
+    <h2>Информация о залах</h2>
+    <table>
+        <tr><th>Номер</th><th>Название</th><th>Этаж</th><th>Площадь</th></tr>
+        {% for hall in halls_list %}
+            <tr>
+                <td>{{ hall.number }}</td>
+                <td>{{ hall.name }}</td>
+                <td>{{ hall.floor }}</td>
+                <td>{{ hall.area }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4">Залы не найдены.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="panel">
+    <h2>Экспонаты, поступившие за последние 6 месяцев</h2>
+    <p class="muted">Показано {{ recent_exhibit_count }} экспонатов.</p>
+    <table>
+        <tr><th>Название</th><th>Вид искусства</th><th>Дата поступления</th><th>Смотрящий</th><th>Зал</th></tr>
+        {% for exhibit in recent_exhibits %}
+            <tr>
+                <td>{{ exhibit.title }}</td>
+                <td>{{ exhibit.kind }}</td>
+                <td>{{ exhibit.accession_date|date:'d.m.Y' }}</td>
+                <td>{% if exhibit.assigned_guide %}{{ exhibit.assigned_guide.name }}{% else %}Не назначен{% endif %}</td>
+                <td>{{ exhibit.hall.name }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5">За последние 6 месяцев новых экспонатов не найдено.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="panel">
+    <h2>Сотрудники на этаже</h2>
+    {% if selected_floor_number %}
+        <p class="muted">Показаны сотрудники для этажа {{ selected_floor_number }}.</p>
+    {% else %}
+        <p class="muted">Выберите этаж в фильтре выше, чтобы увидеть сотрудников.</p>
+    {% endif %}
+    <table>
+        <tr><th>ФИО</th><th>Зал</th><th>Телефон</th><th>Должность</th></tr>
+        {% for guide in guides %}
+            <tr>
+                <td>{{ guide.name }}</td>
+                <td>{% if guide.hall %}{{ guide.hall.name }}{% else %}Не указан{% endif %}</td>
+                <td>{{ guide.phone|default:'—' }}</td>
+                <td>{{ guide.position|default:guide.specialization|default:'—' }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4">По выбранному этажу сотрудники не найдены.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="panel">
+    <h2>Экскурсии за выбранный сезон</h2>
+    <p class="muted">Найдено {{ season_tour_count }} экскурсий.</p>
+    <table>
+        <tr><th>Код экскурсии</th><th>Наименование</th><th>Дата</th><th>Количество людей в группе</th></tr>
+        {% for tour in tours %}
+            <tr>
+                <td>{% if tour.code %}{{ tour.code }}{% else %}T-{{ tour.pk }}{% endif %}</td>
+                <td>{{ tour.title }}</td>
+                <td>{{ tour.date|date:'d.m.Y' }}</td>
+                <td>{{ tour.participants }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4">По выбранному сезону экскурсии не найдены.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="panel">
+    <h2>Экспонаты по залам после выбранной даты</h2>
+    {% if selected_date %}
+        <table>
+            <tr><th>Номер зала</th><th>Название зала</th><th>Этаж</th><th>Площадь</th><th>Количество экспонатов</th></tr>
+            {% for hall_number, hall_name, floor, area, count in hall_counts_after_date %}
+                <tr>
+                    <td>{{ hall_number }}</td>
+                    <td>{{ hall_name }}</td>
+                    <td>{{ floor }}</td>
+                    <td>{{ area }}</td>
+                    <td>{{ count }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">По выбранной дате экспонаты не найдены.</td></tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p class="muted">Введите дату в фильтре, чтобы увидеть количество экспонатов в каждом зале после этой даты.</p>
+    {% endif %}
+</div>
+
+<div class="grid">
+    <div class="panel">
+        <h2>Экспонаты по залам</h2>
+        <svg width="100%" height="260" viewBox="0 0 560 260" role="img" aria-label="Диаграмма экспонатов по залам">
+            {% for item in hall_counts %}
+                <rect x="{{ item.x }}" y="{{ item.bar_y }}" width="50" height="{{ item.bar_height }}" fill="#2980b9"></rect>
+                <text x="{{ item.x|add:25 }}" y="{{ item.label_y }}" text-anchor="middle" font-size="12">{{ item.label|truncatechars:12 }}</text>
+                <text x="{{ item.x|add:25 }}" y="{{ item.value_y }}" text-anchor="middle" font-size="12">{{ item.count }}</text>
+            {% endfor %}
+        </svg>
+    </div>
+
+    <div class="panel">
+        <h2>Экспонаты по типам</h2>
+        <svg width="100%" height="260" viewBox="0 0 560 260" role="img" aria-label="Диаграмма экспонатов по типам">
+            {% for item in kind_counts %}
+                <rect x="{{ item.x }}" y="{{ item.bar_y }}" width="50" height="{{ item.bar_height }}" fill="#27ae60"></rect>
+                <text x="{{ item.x|add:25 }}" y="{{ item.label_y }}" text-anchor="middle" font-size="12">{{ item.label|truncatechars:12 }}</text>
+                <text x="{{ item.x|add:25 }}" y="{{ item.value_y }}" text-anchor="middle" font-size="12">{{ item.count }}</text>
+            {% endfor %}
+        </svg>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}Бронирование{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h1>Покупка билета</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn" type="submit">Купить билет</button>
+    </form>
+</div>
+{% endblock %}

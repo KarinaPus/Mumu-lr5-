@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Вакансии{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h1>Вакансии</h1>
+</div>
+
+<div class="grid">
+    {% for vacancy in vacancies %}
+        <div class="panel">
+            <h2>{{ vacancy.title }}</h2>
+            <p>{{ vacancy.description }}</p>
+            <p class="muted">Опубликовано: {{ vacancy.published_at|date:'d/m/Y H:i' }}</p>
+        </div>
+    {% empty %}
+        <div class="panel"><p>Вакансий пока нет.</p></div>
+    {% endfor %}
+</div>
+{% endblock %}

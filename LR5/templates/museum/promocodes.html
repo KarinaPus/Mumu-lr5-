@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Промокоды и купоны{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h1>Промокоды и купоны</h1>
+</div>
+
+<div class="panel">
+    <h2>Активные</h2>
+    <table>
+        <tr><th>Код</th><th>Скидка</th><th>Описание</th><th>Действует до</th></tr>
+        {% for promo in active_promocodes %}
+            <tr>
+                <td>{{ promo.code }}</td>
+                <td>{{ promo.discount }}%</td>
+                <td>{{ promo.description }}</td>
+                <td>{{ promo.valid_to|default:'—' }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4">Активных промокодов нет.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="panel">
+    <h2>Архив</h2>
+    <table>
+        <tr><th>Код</th><th>Скидка</th><th>Описание</th><th>Действует до</th></tr>
+        {% for promo in archive_promocodes %}
+            <tr>
+                <td>{{ promo.code }}</td>
+                <td>{{ promo.discount }}%</td>
+                <td>{{ promo.description }}</td>
+                <td>{{ promo.valid_to|default:'—' }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4">Архив пуст.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

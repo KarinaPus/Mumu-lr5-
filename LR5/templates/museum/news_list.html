@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Новости{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h1>Новости</h1>
+    <form method="get">
+        <input type="text" name="search" value="{{ search }}" placeholder="Поиск по заголовку или описанию">
+        <button class="btn" type="submit">Поиск</button>
+    </form>
+</div>
+
+<div class="grid">
+    {% for article in news %}
+        <div class="panel">
+            {% if article.image %}
+                <img src="{{ article.image.url }}" alt="{{ article.title }}">
+            {% endif %}
+            <h2>{{ article.title }}</h2>
+            <p class="muted">{{ article.published_at|date:'d/m/Y H:i' }}</p>
+            <p>{{ article.summary|default:article.body|truncatewords:20 }}</p>
+            <a class="btn" href="{% url 'museum:news-detail' article.slug %}">Читать далее</a>
+        </div>
+    {% empty %}
+        <div class="panel"><p>Новости пока не добавлены.</p></div>
+    {% endfor %}
+</div>
+{% endblock %}

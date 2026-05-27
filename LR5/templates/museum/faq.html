@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Словарь терминов и понятий{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h1>Словарь терминов и понятий</h1>
+    <form method="get">
+        <input type="text" name="search" value="{{ search }}" placeholder="Поиск по вопросу или ответу">
+        <button class="btn" type="submit">Поиск</button>
+    </form>
+</div>
+
+<div class="panel">
+    {% for faq in faqs %}
+        <h2>{{ faq.question }}</h2>
+        <p>{{ faq.answer|linebreaksbr }}</p>
+        <p class="muted">Добавлено: {{ faq.added_at|date:'d/m/Y H:i' }}</p>
+    {% empty %}
+        <p>Записей пока нет.</p>
+    {% endfor %}
+</div>
+{% endblock %}

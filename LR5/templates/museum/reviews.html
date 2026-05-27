@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Отзывы{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h1>Отзывы</h1>
+    {% if user.is_authenticated %}
+        <a class="btn" href="{% url 'museum:review-create' %}">Добавить отзыв</a>
+    {% else %}
+        <a class="btn" href="{% url 'museum:login' %}">Войти, чтобы оставить отзыв</a>
+    {% endif %}
+</div>
+
+<div class="grid">
+    {% for review in reviews %}
+        <div class="panel">
+            <h2>{{ review.author_name|default:'Аноним' }}</h2>
+            <p><strong>Оценка:</strong> {{ review.rating }}/5</p>
+            <p>{{ review.text }}</p>
+            {% if review.image %}
+                <img src="{{ review.image.url }}" alt="Изображение отзыва" style="max-width: 100%; border-radius: 8px; margin: 12px 0;">
+            {% endif %}
+            <p class="muted">{{ review.created_at|date:'d/m/Y H:i' }}</p>
+        </div>
+    {% empty %}
+        <div class="panel"><p>Отзывов пока нет.</p></div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}О компании{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h1>О компании</h1>
+    {% if company_info %}
+        <h2>{{ company_info.title }}</h2>
+        <p>{{ company_info.description }}</p>
+        <p><strong>История:</strong> {{ company_info.history }}</p>
+        <p><strong>Реквизиты:</strong> {{ company_info.requisites }}</p>
+    {% else %}
+        <p>Информация о компании пока не добавлена.</p>
+    {% endif %}
+</div>
+
+<div class="panel">
+    <h2>Залы музея</h2>
+    <table>
+        <tr><th>Название</th><th>Номер</th><th>Этаж</th><th>Площадь</th></tr>
+        {% for hall in halls %}
+            <tr>
+                <td>{{ hall.name }}</td>
+                <td>{{ hall.number }}</td>
+                <td>{{ hall.floor }}</td>
+                <td>{{ hall.area }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4">Залы пока не добавлены.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

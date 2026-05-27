@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Контакты{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h1>Контакты</h1>
+    <p><strong>Музей:</strong> {{ museum.name }}</p>
+    <p><strong>Адрес:</strong> {{ museum.address }}</p>
+    <p><strong>Город:</strong> {{ museum.city }}</p>
+</div>
+
+<div class="grid">
+    {% for guide in guides %}
+        <div class="panel">
+            {% if guide.photo %}
+                <img src="{{ guide.photo.url }}" alt="{{ guide.name }}">
+            {% endif %}
+            <h2>{{ guide.name }}</h2>
+            <p><strong>Должность:</strong> {{ guide.specialization }}</p>
+            <p>{{ guide.description }}</p>
+            <p><strong>Телефон:</strong> {{ guide.phone }}</p>
+            <p><strong>Email:</strong> {{ guide.email }}</p>
+        </div>
+    {% empty %}
+        <div class="panel"><p>Сотрудники пока не добавлены.</p></div>
+    {% endfor %}
+</div>
+{% endblock %}

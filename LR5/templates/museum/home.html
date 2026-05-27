@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Главная{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h1>Музейный сайт</h1>
+    <p>Краткая информация о последней опубликованной статье, текущей дате, часовом поясе и внешних сервисах.</p>
+    <p><strong>Текущая дата:</strong> {{ current_date }} | <strong>Время:</strong> {{ current_time }} | <strong>Часовой пояс:</strong> {{ timezone_name }}</p>
+    <p class="muted"><strong>UTC:</strong> {{ utc_now }}</p>
+</div>
+
+<div class="grid">
+    <div class="panel">
+        <h2>Новость дня</h2>
+        {% if news_of_the_day %}
+            <h3>{{ news_of_the_day.title }}</h3>
+            <p>{{ news_of_the_day.summary|default:news_of_the_day.body|truncatewords:25 }}</p>
+            <a class="btn" href="{% url 'museum:news-detail' news_of_the_day.slug %}">Читать далее</a>
+        {% else %}
+            <p>Новостей пока нет.</p>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <h2>Погода и курс</h2>
+        {% if weather %}
+            <p>Температура: {{ weather.temperature }}°C</p>
+            <p>Ветер: {{ weather.wind }} м/с</p>
+        {% else %}
+            <p>Погодные данные недоступны.</p>
+        {% endif %}
+        {% if currency %}
+            <p>USD → RUB: {{ currency.usd_to_rub }}</p>
+            <p>USD → EUR: {{ currency.usd_to_eur }}</p>
+        {% else %}
+            <p>Курс валют недоступен.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="panel">
+    <h2>Последние выставки</h2>
+    <ul>
+        {% for exhibition in latest_exhibitions %}
+            <li>
+                <a href="{% url 'museum:exhibition-detail' exhibition.pk %}">{{ exhibition.title }}</a> — {{ exhibition.museum.name }}
+            </li>
+        {% empty %}
+            <li>Выставки пока не добавлены.</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<div class="panel">
+    <h2>Экспонаты музея</h2>
+    <div class="grid">
+        {% for exhibit in featured_exhibits %}
+            <div class="panel">
+                {% if exhibit.image %}
+                    <img src="{{ exhibit.image.url }}" alt="{{ exhibit.title }}">
+                {% endif %}
+                <h3>{{ exhibit.title }}</h3>
+                <p><strong>Тип:</strong> {{ exhibit.kind }}</p>
+                <p><strong>Зал:</strong> {{ exhibit.hall.name }}</p>
+                <p>{{ exhibit.description|truncatewords:20 }}</p>
+            </div>
+        {% empty %}
+            <p>Экспонаты пока не добавлены.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="panel">
+    <h2>Календарь текущего месяца</h2>
+    <pre>{{ calendar_text }}</pre>
+</div>
+{% endblock %}

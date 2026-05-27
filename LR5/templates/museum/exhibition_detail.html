@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ exhibition.title }}{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h1>{{ exhibition.title }}</h1>
+    <p><strong>Музей:</strong> {{ exhibition.museum.name }}</p>
+    <p><strong>Период:</strong> {{ exhibition.start_date }} — {{ exhibition.end_date }}</p>
+    <p>{{ exhibition.description }}</p>
+
+    <p><strong>Экскурсоводы:</strong></p>
+    <ul>
+        {% for guide in exhibition.guides.all %}
+            <li>{{ guide.name }} ({{ guide.specialization }})</li>
+        {% empty %}
+            <li>Экскурсоводы не назначены.</li>
+        {% endfor %}
+    </ul>
+
+    {% if user.is_superuser %}
+        <a class="btn" href="{% url 'museum:exhibition-edit' exhibition.pk %}">Редактировать</a>
+        <a class="btn btn-danger" href="{% url 'museum:exhibition-delete' exhibition.pk %}">Удалить</a>
+    {% endif %}
+</div>
+{% endblock %}

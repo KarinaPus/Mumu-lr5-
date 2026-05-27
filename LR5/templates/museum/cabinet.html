@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Личный кабинет{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h1>Личный кабинет</h1>
+    <p><strong>Пользователь:</strong> {{ user.username }}</p>
+    <p><strong>Роль:</strong> {{ profile.role|default:'visitor' }}</p>
+    <p><strong>Телефон:</strong> {{ user.visitor.phone|default:'не указано' }}</p>
+    {% if profile.role == 'visitor' %}
+        <p><a class="btn" href="{% url 'museum:booking' %}">Купить билет</a></p>
+    {% endif %}
+</div>
+
+<div class="panel">
+    <h2>Билеты</h2>
+    <table>
+        <tr><th>Выставка</th><th>Статус</th><th>Дата бронирования</th></tr>
+        {% for ticket in tickets %}
+            <tr>
+                <td>{{ ticket.exhibition.title }}</td>
+                <td>{{ ticket.get_status_display }}</td>
+                <td>{{ ticket.created_at|date:'d/m/Y H:i' }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="3">Билетов пока нет.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+{% if profile.role == 'employee' %}
+    <div class="panel">
+        <h2>Закрепленные экспонаты</h2>
+        {% if guide %}
+            <p class="muted">Сотрудник: {{ guide.name }} · {{ guide.position|default:guide.specialization }}</p>
+        {% endif %}
+        <table>
+            <tr><th>Название</th><th>Вид искусства</th><th>Дата поступления</th><th>Зал</th><th>Описание</th></tr>
+            {% for exhibit in assigned_exhibits %}
+                <tr>
+                    <td>{{ exhibit.title }}</td>
+                    <td>{{ exhibit.kind }}</td>
+                    <td>{{ exhibit.accession_date|date:'d.m.Y' }}</td>
+                    <td>{{ exhibit.hall.name }}</td>
+                    <td>{{ exhibit.description|default:'Нет описания' }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">Закрепленных экспонатов не найдено.</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="panel">
+        <h2>Проводимые экскурсии</h2>
+        <table>
+            <tr><th>Код</th><th>Название</th><th>Дата</th><th>Количество людей</th></tr>
+            {% for tour in guided_tours %}
+                <tr>
+                    <td>{% if tour.code %}{{ tour.code }}{% else %}T-{{ tour.pk }}{% endif %}</td>
+                    <td>{{ tour.title }}</td>
+                    <td>{{ tour.date|date:'d.m.Y' }}</td>
+                    <td>{{ tour.participants }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4">Проводимых экскурсий не найдено.</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+{% endif %}
+
+<div class="panel">
+    <h2>Промокоды</h2>
+    <table>
+        <tr><th>Код</th><th>Описание</th><th>Скидка</th><th>Действует до</th></tr>
+        {% for promocode in active_promocodes %}
+            <tr>
+                <td>{{ promocode.code }}</td>
+                <td>{{ promocode.description|default:'—' }}</td>
+                <td>{{ promocode.discount }}%</td>
+                <td>{% if promocode.valid_to %}{{ promocode.valid_to|date:'d.m.Y' }}{% else %}Без срока{% endif %}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4">Активных промокодов нет.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="panel">
+    <h2>Мои отзывы</h2>
+    {% for review in reviews %}
+        <p><strong>{{ review.rating }}/5</strong> — {{ review.text }} <span class="muted">({{ review.created_at|date:'d/m/Y H:i' }})</span></p>
+    {% empty %}
+        <p>Отзывы пока не добавлены.</p>
+    {% endfor %}
+</div>
+{% endblock %}
