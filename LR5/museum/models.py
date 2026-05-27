@@ -182,6 +182,7 @@ class TicketPrice(models.Model):
         ("child", "Детский"),
         ("student", "Студент"),
     )
+    
 
     day_type = models.CharField(max_length=20, choices=DAY_CHOICES)
     age_group = models.CharField(max_length=20, choices=AGE_CHOICES)
@@ -243,15 +244,24 @@ class Ticket(models.Model):
     exhibition = models.ForeignKey(Exhibition, on_delete=models.CASCADE, related_name="tickets")
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="booked")
-    
     visitor_type = models.CharField(max_length=10, choices=VISITOR_TYPE_CHOICES, default='adult', verbose_name="Тип посетителя")
-    child_visitor = models.ForeignKey(Visitor, on_delete=models.SET_NULL, null=True, blank=True, related_name="tickets_as_child", verbose_name="Ребенок")
     price = models.DecimalField(max_digits=8, decimal_places=2, default=0, verbose_name="Цена билета")
+    
+    child_visitor = models.ForeignKey(
+        'Child', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='tickets',
+        verbose_name="Ребенок"
+    )
 
     def __str__(self):
-        child_info = f" (для {self.child_visitor.user.username})" if self.child_visitor else ""
+        child_info = f" (для {self.child_visitor.first_name})" if self.child_visitor else ""
         return f"{self.visitor.user.username} -> {self.exhibition.title}{child_info}"
- 
+
+
+
 class Child(models.Model):
     """Модель для детей (льготные билеты)"""
     parent = models.ForeignKey(

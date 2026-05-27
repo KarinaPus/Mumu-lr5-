@@ -5,17 +5,132 @@
 {% block content %}
 <div class="panel">
     <h1>Покупка билета</h1>
+    
+    {% if form.children.field.queryset %}
+        <div class="alert alert-info">
+            🎫 <strong>Вы идёте с детьми:</strong> При покупке детского билета взрослый билет для вас 
+            добавится автоматически.
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            ⚠️ У вас нет добавленных детей. 
+            <a href="{% url 'museum:add-child' %}">Добавьте ребенка</a> для покупки льготного билета.
+        </div>
+    {% endif %}
+    
     <form method="post">
         {% csrf_token %}
         
         {% if form.non_field_errors %}
-            <div class="errors" style="color: red;">
+            <div class="errors" style="color: red; margin-bottom: 15px;">
                 {{ form.non_field_errors }}
             </div>
         {% endif %}
         
-        {{ form.as_p }}
-        <button class="btn" type="submit">Купить билет</button>
+        <div class="form-row">
+            <label for="{{ form.exhibition.id_for_label }}">{{ form.exhibition.label }}:</label>
+            {{ form.exhibition }}
+            {{ form.exhibition.errors }}
+        </div>
+        
+        <div class="form-row">
+            <label for="{{ form.visitor_type.id_for_label }}">{{ form.visitor_type.label }}:</label>
+            {{ form.visitor_type }}
+            {{ form.visitor_type.errors }}
+        </div>
+        
+        <div class="form-row" id="children-field" 
+             {% if not form.children.field.queryset %}style="display: none;"{% endif %}>
+            <label for="{{ form.children.id_for_label }}">{{ form.children.label }}:</label>
+            {{ form.children }}
+            <div class="help-text" style="color: #666; font-size: 12px; margin-top: 5px;">
+                💡 {{ form.children.help_text }}
+            </div>
+            {{ form.children.errors }}
+        </div>
+        
+        <div class="form-row" id="quantity-field">
+            <label for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}:</label>
+            {{ form.quantity }}
+            <div class="help-text" style="color: #666; font-size: 12px;">
+                Количество билетов для каждого ребенка
+            </div>
+            {{ form.quantity.errors }}
+        </div>
+        
+        <button class="btn" type="submit">🎟️ Купить билет(ы)</button>
+        <a class="btn btn-secondary" href="{% url 'museum:cabinet' %}">Отмена</a>
     </form>
 </div>
+
+<style>
+    .form-row {
+        margin-bottom: 20px;
+    }
+    label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+    select, input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    select[multiple] {
+        min-height: 120px;
+    }
+    .btn-secondary {
+        background: #7f8c8d;
+        margin-left: 10px;
+    }
+    .alert {
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+    .alert-info {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+    }
+    .alert-warning {
+        background: #fff3cd;
+        border: 1px solid #ffeeba;
+        color: #856404;
+    }
+    .errors {
+        color: red;
+        font-size: 14px;
+    }
+    .help-text {
+        color: #666;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+</style>
+
+<script>
+    const visitorTypeSelect = document.getElementById('{{ form.visitor_type.id_for_label }}');
+    const childrenField = document.getElementById('children-field');
+    const quantityField = document.getElementById('quantity-field');
+    
+    function toggleChildrenField() {
+        if (visitorTypeSelect && childrenField) {
+            if (visitorTypeSelect.value === 'child') {
+                childrenField.style.display = 'block';
+                quantityField.style.display = 'block';
+            } else {
+                childrenField.style.display = 'none';
+                quantityField.style.display = 'block';
+            }
+        }
+    }
+    
+    if (visitorTypeSelect) {
+        visitorTypeSelect.addEventListener('change', toggleChildrenField);
+        toggleChildrenField();
+    }
+</script>
 {% endblock %}

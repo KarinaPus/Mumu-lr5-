@@ -116,12 +116,14 @@ class TicketBookingForm(forms.Form):
     ]
     visitor_type = forms.ChoiceField(choices=VISITOR_TYPE_CHOICES, label="Тип посетителя", initial='adult')
     
-    # Если покупается билет для ребенка
-    # child = forms.ModelChoiceField(
-    #     queryset=Visitor.objects.none(), 
-    #     required=False,
-    #     label="Ребенок (если покупаете билет для ребенка)"
-    # )
+    # Множественный выбор детей
+    children = forms.ModelMultipleChoiceField(
+        queryset=Child.objects.none(),
+        required=False,
+        label="Выберите детей",
+        help_text="Можно выбрать несколько детей (Ctrl + клик или Shift + клик)",
+        widget=forms.SelectMultiple(attrs={'size': 5, 'class': 'form-control'})
+    )
     
     quantity = forms.IntegerField(min_value=1, max_value=10, initial=1, label="Количество билетов")
 
@@ -129,27 +131,31 @@ class TicketBookingForm(forms.Form):
         exhibitions = kwargs.pop("exhibitions", Exhibition.objects.none())
         user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
+        
         self.fields["exhibition"].queryset = exhibitions
         
-        # # Если пользователь авторизован и имеет детей, показываем их
-        # if user and hasattr(user, 'visitor'):
-        #     children = user.visitor.children.all()
-        #     if children.exists():
-        #         self.fields['child'].queryset = children
-        #         self.fields['child'].required = False
-        #     else:
-        #         self.fields['child'].widget = forms.HiddenInput()
+        if user and user.is_authenticated and hasattr(user, 'visitor'):
+            children = user.visitor.children.all()
+            
+            if children.exists():
+                self.fields['children'].queryset = children
+                self.fields['children'].widget.attrs.update({'size': min(6, children.count() + 1)})
+            else:
+                self.fields['children'].widget = forms.HiddenInput()
+                self.fields['children'].required = False
     
     def clean(self):
         cleaned_data = super().clean()
         visitor_type = cleaned_data.get('visitor_type')
-        child = cleaned_data.get('child')
+        children = cleaned_data.get('children')
         
-        if visitor_type == 'child' and not child:
-            raise forms.ValidationError('Выберите ребенка, для которого покупается билет.')
+        # Проверка: если выбран тип "ребенок", должны быть выбраны дети
+        if visitor_type == 'child' and (not children or len(children) == 0):
+            raise forms.ValidationError('Выберите хотя бы одного ребенка для льготного билета.')
         
         return cleaned_data
-
+    
+    
 class VisitorProfileForm(forms.ModelForm):
     class Meta:
         model = Visitor

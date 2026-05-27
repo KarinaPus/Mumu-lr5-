@@ -7,6 +7,7 @@ from datetime import datetime
 from datetime import timedelta
 from datetime import timezone as dt_timezone
 
+from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -174,53 +175,93 @@ def booking_view(request):
     if not visitor:
         return HttpResponseForbidden("Профиль не найден.")
     
-    # Проверка на 18+ ТОЛЬКО для выставок с рейтингом 18+
     exhibitions = Exhibition.objects.filter(is_active=True)
-    form = TicketBookingForm(request.POST or None, exhibitions=exhibitions, user=request.user)
-
-    if request.method == "POST" and form.is_valid():
-        exhibition = form.cleaned_data["exhibition"]
-        visitor_type = form.cleaned_data["visitor_type"]
-        quantity = form.cleaned_data["quantity"]
-        child = form.cleaned_data.get("child")
+    
+    if request.method == 'POST':
+        form = TicketBookingForm(request.POST, exhibitions=exhibitions, user=request.user)
         
-        if exhibition.is_adult_only and visitor_type == 'child':
-            form.add_error(None, "Данная выставка предназначена только для посетителей 18+")
-            return render(request, "museum/booking.html", {"form": form})
-        # Расчет цены (льготная для детей)
-        from .models import TicketPrice
-        from django.utils import timezone
-        
-        day_type = 'weekday' if timezone.localtime().weekday() < 5 else 'weekend'
-        age_group = 'child' if visitor_type == 'child' else 'adult'
-        
-        try:
-            price = TicketPrice.objects.get(day_type=day_type, age_group=age_group)
-            ticket_price = price.price
-        except TicketPrice.DoesNotExist:
-            ticket_price = 0
-        
-        # Создаем билет(ы)
-        for _ in range(quantity):
-            ticket = Ticket.objects.create(
-                visitor=visitor,
-                exhibition=exhibition,
-                status="booked",
-                visitor_type=visitor_type,
-                price=ticket_price
-            )
+        if form.is_valid():
+            exhibition = form.cleaned_data["exhibition"]
+            visitor_type = form.cleaned_data["visitor_type"]
+            quantity = form.cleaned_data.get("quantity", 1)
+            selected_children = form.cleaned_data.get("children", [])
             
-            # Если билет для ребенка, связываем
-            if visitor_type == 'child' and form.cleaned_data.get('child'):
-                ticket.child_visitor = form.cleaned_data['child']
-                ticket.save()
-        
-        logger.info("Пользователь %s забронировал %d билет(ов) на %s (тип: %s)", 
-                   request.user.username, quantity, exhibition.title, visitor_type)
-        return redirect("museum:cabinet")
-
+            # Проверка 18+ для выставки
+            if hasattr(exhibition, 'is_adult_only') and exhibition.is_adult_only and visitor_type == 'child':
+                form.add_error(None, "Данная выставка предназначена только для посетителей 18+")
+                return render(request, "museum/booking.html", {"form": form})
+            
+            # Расчет цены
+            from django.utils import timezone
+            from .models import TicketPrice
+            
+            day_type = 'weekday' if timezone.localtime().weekday() < 5 else 'weekend'
+            
+            tickets_created = []
+            
+            if visitor_type == 'child' and selected_children:
+                # 👨‍👧 РОДИТЕЛЬ ИДЁТ С ДЕТЬМИ
+                # 1. Создаём взрослый билет для родителя
+                try:
+                    adult_price = TicketPrice.objects.get(day_type=day_type, age_group='adult')
+                    adult_ticket_price = adult_price.price
+                except TicketPrice.DoesNotExist:
+                    adult_ticket_price = 0
+                
+                adult_ticket = Ticket.objects.create(
+                    visitor=visitor,
+                    exhibition=exhibition,
+                    status="booked",
+                    visitor_type='adult',
+                    price=adult_ticket_price
+                )
+                tickets_created.append(adult_ticket)
+                logger.info(f"Взрослый билет для {visitor.user.username} на {exhibition.title}")
+                
+                # 2. Создаём детские билеты для каждого выбранного ребенка
+                try:
+                    child_price = TicketPrice.objects.get(day_type=day_type, age_group='child')
+                    child_ticket_price = child_price.price
+                except TicketPrice.DoesNotExist:
+                    child_ticket_price = 0
+                
+                for child in selected_children:
+                    for _ in range(quantity):
+                        child_ticket = Ticket.objects.create(
+                            visitor=visitor,
+                            exhibition=exhibition,
+                            status="booked",
+                            visitor_type='child',
+                            price=child_ticket_price,
+                            child_visitor=child
+                        )
+                        tickets_created.append(child_ticket)
+                        logger.info(f"Детский билет для {child.first_name} на {exhibition.title}")
+            
+            else:
+                # Только взрослый билет (без детей)
+                try:
+                    adult_price = TicketPrice.objects.get(day_type=day_type, age_group='adult')
+                    adult_ticket_price = adult_price.price
+                except TicketPrice.DoesNotExist:
+                    adult_ticket_price = 0
+                
+                for _ in range(quantity):
+                    ticket = Ticket.objects.create(
+                        visitor=visitor,
+                        exhibition=exhibition,
+                        status="booked",
+                        visitor_type='adult',
+                        price=adult_ticket_price
+                    )
+                    tickets_created.append(ticket)
+            
+            messages.success(request, f"✅ Успешно забронировано {len(tickets_created)} билет(ов)!")
+            return redirect("museum:cabinet")
+    else:
+        form = TicketBookingForm(exhibitions=exhibitions, user=request.user)
+    
     return render(request, "museum/booking.html", {"form": form})
-
 
 @login_required
 def cabinet_view(request):

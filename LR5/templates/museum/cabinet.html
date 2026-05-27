@@ -16,18 +16,42 @@
 </div>
 
 <div class="panel">
-    <h2>Билеты</h2>
-    <table>
-        <tr><th>Выставка</th><th>Статус</th><th>Дата бронирования</th></tr>
-        {% for ticket in tickets %}
+    <h2>Мои билеты</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Выставка</th>
+                <th>Тип билета</th>
+                <th>Посетитель</th>
+                <th>Статус</th>
+                <th>Дата бронирования</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets %}
             <tr>
                 <td>{{ ticket.exhibition.title }}</td>
+                <td>
+                    {% if ticket.visitor_type == 'child' %}
+                        🧒 Детский (льготный)
+                    {% else %}
+                        👤 Взрослый
+                    {% endif %}
+                </td>
+                <td>
+                    {% if ticket.child_visitor %}
+                        {{ ticket.child_visitor.first_name }} {{ ticket.child_visitor.last_name }} (ребенок)
+                    {% else %}
+                        {{ user.username }}
+                    {% endif %}
+                </td>
                 <td>{{ ticket.get_status_display }}</td>
                 <td>{{ ticket.created_at|date:'d/m/Y H:i' }}</td>
             </tr>
-        {% empty %}
-            <tr><td colspan="3">Билетов пока нет.</td></tr>
-        {% endfor %}
+            {% empty %}
+                <tr><td colspan="5">Билетов пока нет.</td></tr>
+            {% endfor %}
+        </tbody>
     </table>
 </div>
 
