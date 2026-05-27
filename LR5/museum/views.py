@@ -17,7 +17,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
-from .forms import ExhibitionForm, RegisterForm, ReviewForm, TicketBookingForm
+from .forms import ExhibitionForm, RegisterForm, ReviewForm, TicketBookingForm, ChildForm
 from .models import (
     CompanyInfo,
     Exhibit,
@@ -169,15 +169,55 @@ class RegisterView(CreateView):
 
 @login_required
 def booking_view(request):
-    visitor, _ = Visitor.objects.get_or_create(user=request.user)
+    visitor = getattr(request.user, 'visitor', None)
+    
+    if not visitor:
+        return HttpResponseForbidden("Профиль не найден.")
+    
+    # Проверка на 18+ ТОЛЬКО для выставок с рейтингом 18+
     exhibitions = Exhibition.objects.filter(is_active=True)
-    form = TicketBookingForm(request.POST or None, exhibitions=exhibitions)
+    form = TicketBookingForm(request.POST or None, exhibitions=exhibitions, user=request.user)
 
     if request.method == "POST" and form.is_valid():
         exhibition = form.cleaned_data["exhibition"]
-        Ticket.objects.create(visitor=visitor, exhibition=exhibition, status="booked")
-        logger.info("Пользователь %s забронировал билет на %s", request.user.username, exhibition.title)
-        return redirect("museum:home")
+        visitor_type = form.cleaned_data["visitor_type"]
+        quantity = form.cleaned_data["quantity"]
+        child = form.cleaned_data.get("child")
+        
+        if exhibition.is_adult_only and visitor_type == 'child':
+            form.add_error(None, "Данная выставка предназначена только для посетителей 18+")
+            return render(request, "museum/booking.html", {"form": form})
+        # Расчет цены (льготная для детей)
+        from .models import TicketPrice
+        from django.utils import timezone
+        
+        day_type = 'weekday' if timezone.localtime().weekday() < 5 else 'weekend'
+        age_group = 'child' if visitor_type == 'child' else 'adult'
+        
+        try:
+            price = TicketPrice.objects.get(day_type=day_type, age_group=age_group)
+            ticket_price = price.price
+        except TicketPrice.DoesNotExist:
+            ticket_price = 0
+        
+        # Создаем билет(ы)
+        for _ in range(quantity):
+            ticket = Ticket.objects.create(
+                visitor=visitor,
+                exhibition=exhibition,
+                status="booked",
+                visitor_type=visitor_type,
+                price=ticket_price
+            )
+            
+            # Если билет для ребенка, связываем
+            if visitor_type == 'child' and form.cleaned_data.get('child'):
+                ticket.child_visitor = form.cleaned_data['child']
+                ticket.save()
+        
+        logger.info("Пользователь %s забронировал %d билет(ов) на %s (тип: %s)", 
+                   request.user.username, quantity, exhibition.title, visitor_type)
+        return redirect("museum:cabinet")
 
     return render(request, "museum/booking.html", {"form": form})
 
@@ -419,3 +459,32 @@ def stats_view(request):
         "recent_exhibit_count": recent_exhibits.count(),
     }
     return render(request, "museum/stats.html", stats)
+@login_required
+def add_child_view(request):
+    """Добавление ребенка для льготных билетов"""
+    visitor = getattr(request.user, 'visitor', None)
+    
+    if not visitor:
+        return HttpResponseForbidden("Профиль не найден.")
+    
+    if request.method == 'POST':
+        form = ChildForm(request.POST)
+        if form.is_valid():
+            # Создаем ребенка, привязывая к текущему пользователю
+            child = form.save(commit=False)
+            child.parent = visitor
+            child.save()
+            
+            # Логируем
+            import logging
+            logger = logging.getLogger("museum")
+            logger.info(f"Пользователь {request.user.username} добавил ребенка {child.first_name}")
+            
+            return redirect('museum:cabinet')
+        else:
+            # Если форма не валидна, покажем ошибки
+            return render(request, 'museum/add_child.html', {'form': form})
+    else:
+        form = ChildForm()
+    
+    return render(request, 'museum/add_child.html', {'form': form})

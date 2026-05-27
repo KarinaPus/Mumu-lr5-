@@ -8,6 +8,8 @@
     <p><strong>Пользователь:</strong> {{ user.username }}</p>
     <p><strong>Роль:</strong> {{ profile.role|default:'visitor' }}</p>
     <p><strong>Телефон:</strong> {{ user.visitor.phone|default:'не указано' }}</p>
+    <p><strong>Дата рождения:</strong> {{ user.visitor.birth_date|default:'не указана' }}</p>
+    <p><strong>Возраст:</strong> {{ user.visitor.age|default:'—' }} лет</p>
     {% if profile.role == 'visitor' %}
         <p><a class="btn" href="{% url 'museum:booking' %}">Купить билет</a></p>
     {% endif %}
@@ -27,6 +29,35 @@
             <tr><td colspan="3">Билетов пока нет.</td></tr>
         {% endfor %}
     </table>
+</div>
+
+<div class="panel">
+    <h2>👨‍👩‍👧 Мои дети (льготные билеты)</h2>
+    
+    {% if user.visitor.children.all %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Имя</th>
+                    <th>Дата рождения</th>
+                    <th>Возраст</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for child in user.visitor.children.all %}
+                <tr>
+                    <td>{{ child.first_name }} {{ child.last_name }}</td>
+                    <td>{{ child.birth_date|date:'d.m.Y' }}</td>
+                    <td>{{ child.age }} лет</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Дети не добавлены. Добавьте ребенка, чтобы покупать для него льготные билеты.</p>
+    {% endif %}
+    
+    <a href="{% url 'museum:add-child' %}" class="btn">➕ Добавить ребенка</a>
 </div>
 
 {% if profile.role == 'employee' %}

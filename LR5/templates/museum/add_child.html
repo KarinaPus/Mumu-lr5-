@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Добавить ребенка{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h1>👶 Добавить ребенка</h1>
+    <p class="muted">Добавьте ребенка, чтобы покупать для него льготные билеты (до 18 лет).</p>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+            <div class="errors" style="color: red; margin-bottom: 15px;">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+        
+        {% for field in form %}
+            <div class="form-row">
+                <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                {{ field }}
+                {% if field.errors %}
+                    <div class="field-error" style="color: red; font-size: 12px;">
+                        {{ field.errors }}
+                    </div>
+                {% endif %}
+                {% if field.help_text %}
+                    <div class="help-text" style="color: #666; font-size: 12px;">
+                        {{ field.help_text }}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+        
+        <button class="btn" type="submit">Добавить ребенка</button>
+        <a class="btn btn-secondary" href="{% url 'museum:cabinet' %}">Отмена</a>
+    </form>
+</div>
+
+<style>
+    .form-row {
+        margin-bottom: 15px;
+    }
+    label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    input, select, textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    .btn-secondary {
+        background: #7f8c8d;
+        margin-left: 10px;
+    }
+</style>
+{% endblock %}

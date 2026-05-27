@@ -1,7 +1,8 @@
 from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-
+from datetime import date
+from django.core.exceptions import ValidationError
 
 class Museum(models.Model):
     name = models.CharField(max_length=150)
@@ -12,6 +13,15 @@ class Museum(models.Model):
 
     def __str__(self):
         return self.name
+
+
+def validate_age_18_plus(value):
+    """Проверяет, что возраст >= 18 лет"""
+    today = date.today()
+    age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
+    if age < 18:
+        raise ValidationError('Возраст должен быть 18 лет или старше.')
+
 
 
 class Hall(models.Model):
@@ -36,9 +46,16 @@ class Guide(models.Model):
     description = models.TextField(blank=True)
     hall = models.ForeignKey(Hall, on_delete=models.SET_NULL, null=True, blank=True, related_name="guides")
     photo = models.FileField(upload_to="", blank=True, default="a.jpg")
+    birth_date = models.DateField(null=True, blank=True, validators=[validate_age_18_plus], verbose_name="Дата рождения")
 
     def __str__(self):
         return self.name
+    @property
+    def age(self):
+        if self.birth_date:
+            today = date.today()
+            return today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
+        return None
 
 
 class Exhibit(models.Model):
@@ -64,6 +81,7 @@ class Exhibition(models.Model):
     end_date = models.DateField()
     guides = models.ManyToManyField(Guide, blank=True, related_name="exhibitions")
     is_active = models.BooleanField(default=True)
+    is_adult_only = models.BooleanField(default=False, verbose_name="Только для 18+")
 
     def __str__(self):
         return f"{self.title} ({self.museum.name})"
@@ -174,13 +192,29 @@ class TicketPrice(models.Model):
         return f"{self.get_day_type_display()} / {self.get_age_group_display()}: {self.price}"
 
 
+
 class Visitor(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="visitor")
     phone = models.CharField(max_length=30, blank=True)
     favorite_museum = models.ForeignKey(Museum, on_delete=models.SET_NULL, null=True, blank=True)
+    birth_date = models.DateField(null=True, blank=True, validators=[validate_age_18_plus], verbose_name="Дата рождения")
+    
+    is_parent = models.BooleanField(default=False, verbose_name="Законный представитель")
+    # children = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='parents', verbose_name="Дети")
 
     def __str__(self):
         return self.user.get_username()
+    
+    @property
+    def age(self):
+        if self.birth_date:
+            today = date.today()
+            return today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
+        return None
+    
+    @property
+    def full_name(self):
+        return f"{self.user.first_name} {self.user.last_name}".strip() or self.user.username
 
 
 class Profile(models.Model):
@@ -199,11 +233,49 @@ class Ticket(models.Model):
         ("used", "Использован"),
         ("cancelled", "Отменён"),
     )
+    
+    VISITOR_TYPE_CHOICES = (
+        ("adult", "Взрослый"),
+        ("child", "Ребенок/школьник"),
+    )
 
     visitor = models.ForeignKey(Visitor, on_delete=models.CASCADE, related_name="tickets")
     exhibition = models.ForeignKey(Exhibition, on_delete=models.CASCADE, related_name="tickets")
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="booked")
+    
+    visitor_type = models.CharField(max_length=10, choices=VISITOR_TYPE_CHOICES, default='adult', verbose_name="Тип посетителя")
+    child_visitor = models.ForeignKey(Visitor, on_delete=models.SET_NULL, null=True, blank=True, related_name="tickets_as_child", verbose_name="Ребенок")
+    price = models.DecimalField(max_digits=8, decimal_places=2, default=0, verbose_name="Цена билета")
 
     def __str__(self):
-        return f"{self.visitor.user.username} -> {self.exhibition.title}"
+        child_info = f" (для {self.child_visitor.user.username})" if self.child_visitor else ""
+        return f"{self.visitor.user.username} -> {self.exhibition.title}{child_info}"
+ 
+class Child(models.Model):
+    """Модель для детей (льготные билеты)"""
+    parent = models.ForeignKey(
+        'Visitor', 
+        on_delete=models.CASCADE, 
+        related_name="children"
+    )
+    first_name = models.CharField(max_length=100, verbose_name="Имя")
+    last_name = models.CharField(max_length=100, blank=True, verbose_name="Фамилия")
+    birth_date = models.DateField(verbose_name="Дата рождения")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}".strip() or f"Ребенок #{self.id}"
+    
+    @property
+    def age(self):
+        from datetime import date
+        if self.birth_date:
+            today = date.today()
+            age = today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
+            return age
+        return None
+    
+    class Meta:
+        verbose_name = "Ребенок"
+        verbose_name_plural = "Дети"

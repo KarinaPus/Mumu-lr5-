@@ -1,11 +1,13 @@
 from pathlib import Path
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-SECRET_KEY = "django-insecure-change-me"
-DEBUG = True
-ALLOWED_HOSTS = ["*"]  # или ["localhost", "127.0.0.1"]
-
+SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-change-me")
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+# SECRET_KEY = "django-insecure-change-me"
+# DEBUG = True
+# ALLOWED_HOSTS = ["*"]  # или ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -49,9 +51,13 @@ TEMPLATES = [
 WSGI_APPLICATION = "museum_project.wsgi.application"
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql' if os.environ.get('DATABASE_URL') else 'django.db.backends.sqlite3',
+        'NAME': os.environ.get('POSTGRES_DB', BASE_DIR / 'db.sqlite3'),
+        'USER': os.environ.get('POSTGRES_USER', ''),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
+        'HOST': os.environ.get('POSTGRES_HOST', ''),
+        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
     }
 }
 
@@ -79,7 +85,7 @@ STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "museum" / "foto"
-
+STATIC_ROOT = BASE_DIR / "staticfiles" 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_REDIRECT_URL = "museum:home"

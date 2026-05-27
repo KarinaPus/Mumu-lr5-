@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import User
 
 from .models import (
     CompanyInfo,
@@ -17,7 +19,15 @@ from .models import (
     Tour,
     Vacancy,
     Visitor,
+    Child,
 )
+admin.site.unregister(User)
+
+class CustomUserAdmin(UserAdmin):
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'is_active')
+    search_fields = ('username', 'email', 'first_name', 'last_name')
+    list_filter = ('is_staff', 'is_active', 'is_superuser')
+
 
 
 @admin.register(Museum)
@@ -97,14 +107,33 @@ class TicketPriceAdmin(admin.ModelAdmin):
 
 @admin.register(Visitor)
 class VisitorAdmin(admin.ModelAdmin):
-    list_display = ("user", "phone")
+    list_display = ('user', 'phone', 'birth_date', 'is_parent', 'age')
+    search_fields = ('user__username', 'user__email', 'phone')
+    list_filter = ('is_parent',)
+    readonly_fields = ('age',)
+    
+    def age(self, obj):
+        return obj.age
+    age.short_description = "Возраст"
 
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "role")
+    list_display = ('user', 'role')
+    list_filter = ('role',)
+    search_fields = ('user__username',)
 
 
 @admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):
     list_display = ("visitor", "exhibition", "status", "created_at")
+
+@admin.register(Child)
+class ChildAdmin(admin.ModelAdmin):
+    list_display = ('first_name', 'last_name', 'parent', 'birth_date', 'age')
+    list_filter = ('parent',)
+    search_fields = ('first_name', 'last_name', 'parent__user__username')
+    
+    def age(self, obj):
+        return obj.age
+    age.short_description = "Возраст"

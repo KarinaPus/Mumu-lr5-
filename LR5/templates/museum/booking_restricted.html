@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Доступ ограничен{% endblock %}
+
+{% block content %}
+<div class="panel" style="text-align: center; border-left: 4px solid #e74c3c;">
+    <h1>⛔ Доступ ограничен</h1>
+    
+    <div style="padding: 20px; background: #fef5f5; border-radius: 8px;">
+        <p style="font-size: 18px;">{{ message }}</p>
+        
+        {% if not is_adult %}
+            <p style="color: #e74c3c; font-size: 16px;">
+                <strong>Вам нет 18 лет.</strong> Пожалуйста, попросите родителей или законных представителей приобрести билеты.
+            </p>
+        {% endif %}
+    </div>
+    
+    <div style="margin-top: 30px;">
+        <p>📞 По вопросам приобретения билетов обращайтесь в кассу музея или по телефону: <strong>+375 (29) 123-45-67</strong></p>
+        <a href="{% url 'museum:home' %}" class="btn">Вернуться на главную</a>
+    </div>
+</div>
+
+<div class="panel">
+    <h2>🎟️ Льготные категории</h2>
+    <p>Дети и школьники (до 18 лет) проходят по льготным билетам, оформленным родителем или законным представителем.</p>
+    <p>Для оформления льготного билета:</p>
+    <ul>
+        <li>Зарегистрируйтесь на сайте (только для лиц от 18 лет)</li>
+        <li>Добавьте детей в личном кабинете</li>
+        <li>При покупке выберите тип "Ребенок" и укажите данные ребенка</li>
+    </ul>
+</div>
+{% endblock %}

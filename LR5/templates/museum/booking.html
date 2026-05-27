@@ -7,6 +7,13 @@
     <h1>Покупка билета</h1>
     <form method="post">
         {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+            <div class="errors" style="color: red;">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+        
         {{ form.as_p }}
         <button class="btn" type="submit">Купить билет</button>
     </form>

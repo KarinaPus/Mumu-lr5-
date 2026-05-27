@@ -25,6 +25,7 @@ from .views import (
     stats_view,
     ticket_prices_view,
     vacancies_view,
+    add_child_view,
 )
 from .views_api import ExhibitionViewSet, MuseumViewSet, NewsArticleViewSet, PromoCodeViewSet
 
@@ -62,4 +63,5 @@ urlpatterns = [
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("api/auth/token/", obtain_auth_token, name="api-token"),
     path("api/", include(router.urls)),
+    path("cabinet/add-child/", add_child_view, name="add-child"),
 ]
